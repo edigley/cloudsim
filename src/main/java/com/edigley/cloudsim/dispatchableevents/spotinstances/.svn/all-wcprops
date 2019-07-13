@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 122
+/svn/!svn/ver/183/trunk/SpotInstancesSimulator/src/br/edu/ufcg/lsd/spotinstancessimulator/dispatchableevents/spotinstances
+END
+SpotPriceEventFilter.java
+K 25
+svn:wc:ra_dav:version-url
+V 148
+/svn/!svn/ver/165/trunk/SpotInstancesSimulator/src/br/edu/ufcg/lsd/spotinstancessimulator/dispatchableevents/spotinstances/SpotPriceEventFilter.java
+END
+SpotPriceEventDispatcher.java
+K 25
+svn:wc:ra_dav:version-url
+V 152
+/svn/!svn/ver/183/trunk/SpotInstancesSimulator/src/br/edu/ufcg/lsd/spotinstancessimulator/dispatchableevents/spotinstances/SpotPriceEventDispatcher.java
+END
+SpotPriceEventListenerAdapter.java
+K 25
+svn:wc:ra_dav:version-url
+V 157
+/svn/!svn/ver/183/trunk/SpotInstancesSimulator/src/br/edu/ufcg/lsd/spotinstancessimulator/dispatchableevents/spotinstances/SpotPriceEventListenerAdapter.java
+END
+SpotPriceEventListener.java
+K 25
+svn:wc:ra_dav:version-url
+V 150
+/svn/!svn/ver/183/trunk/SpotInstancesSimulator/src/br/edu/ufcg/lsd/spotinstancessimulator/dispatchableevents/spotinstances/SpotPriceEventListener.java
+END

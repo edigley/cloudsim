@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 96
+/svn/!svn/ver/202/trunk/SpotInstancesSimulator/src/br/edu/ufcg/lsd/spotinstancessimulator/policy
+END
+SpotInstancesScheduler.java
+K 25
+svn:wc:ra_dav:version-url
+V 124
+/svn/!svn/ver/202/trunk/SpotInstancesSimulator/src/br/edu/ufcg/lsd/spotinstancessimulator/policy/SpotInstancesScheduler.java
+END
+SpotInstancesSchedulerLimited.java
+K 25
+svn:wc:ra_dav:version-url
+V 131
+/svn/!svn/ver/190/trunk/SpotInstancesSimulator/src/br/edu/ufcg/lsd/spotinstancessimulator/policy/SpotInstancesSchedulerLimited.java
+END
+SpotInstancesMultiCoreSchedulerLimited.java
+K 25
+svn:wc:ra_dav:version-url
+V 140
+/svn/!svn/ver/202/trunk/SpotInstancesSimulator/src/br/edu/ufcg/lsd/spotinstancessimulator/policy/SpotInstancesMultiCoreSchedulerLimited.java
+END

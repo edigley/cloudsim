@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 98
+/svn/!svn/ver/190/trunk/SpotInstancesSimulator/src/br/edu/ufcg/lsd/spotinstancessimulator/entities
+END
+SpotValue.java
+K 25
+svn:wc:ra_dav:version-url
+V 113
+/svn/!svn/ver/165/trunk/SpotInstancesSimulator/src/br/edu/ufcg/lsd/spotinstancessimulator/entities/SpotValue.java
+END
+EC2InstanceBadge.java
+K 25
+svn:wc:ra_dav:version-url
+V 120
+/svn/!svn/ver/183/trunk/SpotInstancesSimulator/src/br/edu/ufcg/lsd/spotinstancessimulator/entities/EC2InstanceBadge.java
+END
+EC2Instance.java
+K 25
+svn:wc:ra_dav:version-url
+V 115
+/svn/!svn/ver/190/trunk/SpotInstancesSimulator/src/br/edu/ufcg/lsd/spotinstancessimulator/entities/EC2Instance.java
+END
+BidValue.java
+K 25
+svn:wc:ra_dav:version-url
+V 112
+/svn/!svn/ver/190/trunk/SpotInstancesSimulator/src/br/edu/ufcg/lsd/spotinstancessimulator/entities/BidValue.java
+END

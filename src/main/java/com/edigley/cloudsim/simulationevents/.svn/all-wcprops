@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 106
+/svn/!svn/ver/183/trunk/SpotInstancesSimulator/src/br/edu/ufcg/lsd/spotinstancessimulator/simulationevents
+END
+SpotPriceTimedEvent.java
+K 25
+svn:wc:ra_dav:version-url
+V 131
+/svn/!svn/ver/165/trunk/SpotInstancesSimulator/src/br/edu/ufcg/lsd/spotinstancessimulator/simulationevents/SpotPriceTimedEvent.java
+END
+SpotInstancesActiveEntity.java
+K 25
+svn:wc:ra_dav:version-url
+V 137
+/svn/!svn/ver/183/trunk/SpotInstancesSimulator/src/br/edu/ufcg/lsd/spotinstancessimulator/simulationevents/SpotInstancesActiveEntity.java
+END
+NewSpotPriceEvent.java
+K 25
+svn:wc:ra_dav:version-url
+V 129
+/svn/!svn/ver/165/trunk/SpotInstancesSimulator/src/br/edu/ufcg/lsd/spotinstancessimulator/simulationevents/NewSpotPriceEvent.java
+END
+FullHourCompletedEvent.java
+K 25
+svn:wc:ra_dav:version-url
+V 134
+/svn/!svn/ver/183/trunk/SpotInstancesSimulator/src/br/edu/ufcg/lsd/spotinstancessimulator/simulationevents/FullHourCompletedEvent.java
+END
