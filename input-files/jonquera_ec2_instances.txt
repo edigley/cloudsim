@@ -1,0 +1,8 @@
+"m1.small"	1.7		"1-ECU[1x1]"		160.0		32	[ ( "US - N. Virginia", 0.085, 0.12), ( "US - N. California", 0.095, 0.13), ( "EU - Ireland", 0.095, 0.12), ( "APAC - Singapore", 0.095, 0.12), ]
+"m1.large"	7.5		"4-ECU[2x2]"		850.0		64	[ ( "US - N. Virginia", 0.34,  0.48), ( "US - N. California", 0.38,  0.52), ( "EU - Ireland", 0.38,  0.48), ( "APAC - Singapore", 0.38,  0.48), ]
+"m1.xlarge"	15		"8-ECU[4x2]"		1690.0		64	[ ( "US - N. Virginia", 0.68,  0.96), ( "US - N. California", 0.76,  1.04), ( "EU - Ireland", 0.76,  0.96), ( "APAC - Singapore", 0.76,  0.96), ]
+"m2.xlarge"	17.1		"6.5-ECU[2x3.25]"		420.0		64	[ ( "US - N. Virginia", 0.50,  0.62), ( "US - N. California", 0.57,  0.69), ( "EU - Ireland", 0.57,  0.62), ( "APAC - Singapore", 0.57,  0.62), ]
+"m2.2xlarge"	34.2		"13-ECU[4x3.25]"		850.0		64	[ ( "US - N. Virginia", 1.20,  1.44), ( "US - N. California", 1.34,  1.58), ( "EU - Ireland", 1.34,  1.44), ( "APAC - Singapore", 1.34,  1.44), ]
+"m2.4xlarge"	68.4		"26-ECU[8x3.25]"		1690.0		64	[ ( "US - N. Virginia", 2.40,  2.88), ( "US - N. California", 2.68,  3.16), ( "EU - Ireland", 2.68,  2.88), ( "APAC - Singapore", 2.68,  2.88), ]
+"c1.medium"	1.7		"5-ECU[2x2.5]"		350.0		32	[ ( "US - N. Virginia", 0.17,  0.29), ( "US - N. California", 0.19,  0.31), ( "EU - Ireland", 0.19,  0.29), ( "APAC - Singapore", 0.19,  0.29), ]
+"c1.xlarge"	7		"20-ECU[8x2.5]"		1690.0		64	[ ( "US - N. Virginia", 0.68,  1.16), ( "US - N. California", 0.76,  1.24), ( "EU - Ireland", 0.76,  1.16), ( "APAC - Singapore", 0.76,  1.16), ]
