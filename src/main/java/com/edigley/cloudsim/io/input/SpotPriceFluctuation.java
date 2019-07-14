@@ -7,7 +7,6 @@ import java.util.PriorityQueue;
 import java.util.Scanner;
 
 import com.edigley.oursim.io.input.InputAbstract;
-import com.edigley.cloudsim.simulationevents.NewSpotPriceEvent;
 import com.edigley.cloudsim.util.SpotInstaceTraceFormat;
 
 public class SpotPriceFluctuation extends InputAbstract<SpotPrice> {

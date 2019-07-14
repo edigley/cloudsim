@@ -16,6 +16,14 @@
 
 package com.edigley.cloudsim.ui;
 
+import static com.edigley.cloudsim.util.BufferedWriterUtils.closeFileWriter;
+import static com.edigley.cloudsim.util.BufferedWriterUtils.closeBufferedWriter;
+import static com.edigley.cloudsim.util.BufferedWriterUtils.createBufferedWriter;
+import static com.edigley.cloudsim.util.EC2InstancesSchedulerUtils.createSpotInstancesScheduler;
+import static com.edigley.cloudsim.util.EC2InstancesSchedulerUtils.defineWorkloadToSpotInstances;
+import static com.edigley.cloudsim.util.EventListenerUtils.deregisterJobEventListeners;
+import static com.edigley.cloudsim.util.EventListenerUtils.registerJobEventListeners;
+import static com.edigley.cloudsim.util.EventListenerUtils.deregisterTaskEventListeners;
 import static com.edigley.oursim.ui.CLI.AVAILABILITY;
 import static com.edigley.oursim.ui.CLI.EXECUTION_LINE;
 import static com.edigley.oursim.ui.CLI.HELP;
@@ -30,13 +38,11 @@ import static com.edigley.oursim.ui.CLIUTil.prepareOutputAccounting;
 
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.HashMap;
+import java.text.ParseException;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 
 import org.apache.commons.cli.CommandLine;
@@ -44,11 +50,16 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.lang.time.StopWatch;
 
+import com.edigley.cloudsim.entities.EC2Instance;
+import com.edigley.cloudsim.io.input.SpotPrice;
+import com.edigley.cloudsim.io.input.SpotPriceFluctuation;
+import com.edigley.cloudsim.io.input.workload.TwoStagePredictionWorkload;
+import com.edigley.cloudsim.policy.SpotInstancesMultiCoreSchedulerLimited;
+import com.edigley.cloudsim.simulationevents.SpotInstancesActiveEntity;
+import com.edigley.cloudsim.util.SpotInstaceTraceFormat;
 import com.edigley.oursim.OurSim;
-import com.edigley.oursim.dispatchableevents.jobevents.JobEventDispatcher;
-import com.edigley.oursim.dispatchableevents.taskevents.TaskEventDispatcher;
+import com.edigley.oursim.dispatchableevents.taskevents.TaskEventListener;
 import com.edigley.oursim.entities.Grid;
-import com.edigley.oursim.entities.Peer;
 import com.edigley.oursim.io.input.Input;
 import com.edigley.oursim.io.input.availability.AvailabilityRecord;
 import com.edigley.oursim.io.input.workload.Workload;
@@ -59,17 +70,6 @@ import com.edigley.oursim.policy.JobSchedulerPolicy;
 import com.edigley.oursim.simulationevents.EventQueue;
 import com.edigley.oursim.ui.SystemConfigurationCommandParser;
 import com.edigley.oursim.util.TimeUtil;
-import com.edigley.cloudsim.dispatchableevents.spotinstances.SpotPriceEventDispatcher;
-import com.edigley.cloudsim.entities.EC2Instance;
-import com.edigley.cloudsim.entities.EC2InstanceBadge;
-import com.edigley.cloudsim.io.input.SpotPrice;
-import com.edigley.cloudsim.io.input.SpotPriceFluctuation;
-import com.edigley.cloudsim.io.input.workload.TwoStagePredictionWorkload;
-import com.edigley.cloudsim.parser.Ec2InstanceParser;
-import com.edigley.cloudsim.policy.SpotInstancesMultiCoreSchedulerLimited;
-import com.edigley.cloudsim.policy.SpotInstancesScheduler;
-import com.edigley.cloudsim.simulationevents.SpotInstancesActiveEntity;
-import com.edigley.cloudsim.util.SpotInstaceTraceFormat;
 
 public class SpotCLI {
 
@@ -99,60 +99,74 @@ public class SpotCLI {
 	
 	public static final String NUM_USERS_BY_PEER = "upp";
 
+	@SuppressWarnings("deprecation")
 	public static void main(String[] args) throws Exception {
 
 		StopWatch stopWatch = new StopWatch();
 		stopWatch.start();
 
 		CommandLine cmd = parseCommandLine(args, prepareOptions(), HELP, USAGE, EXECUTION_LINE);
-
+		
+		// Simulation output file for job related events
 		PrintOutput printOutput = new PrintOutput((File) cmd.getOptionObject(OUTPUT), false);
-		JobEventDispatcher.getInstance().addListener(printOutput);
-
 		ComputingElementEventCounter compElemEventCounter = prepareOutputAccounting(cmd, cmd.hasOption(VERBOSE));
 
+		// the mandatory entities for the simulation
 		OurSim oursim = null;
-		Input<? extends AvailabilityRecord> availability = null;
 		Workload workload = null;
 		JobSchedulerPolicy jobScheduler = null;
-
-		Grid grid = prepareGrid(cmd);
-
+		Input<? extends AvailabilityRecord> availability = null;
+		Grid grid = null;
+		
 		String spotTraceFilePath = cmd.getOptionValue(AVAILABILITY);
+		
+		//a summary of the spot prices
 		List<SpotPrice> refSpotPrices = SpotInstaceTraceFormat.extractReferenceSpotPrices(spotTraceFilePath);
 
-		long timeOfFirstSpotPrice = refSpotPrices.get(SpotInstaceTraceFormat.FIRST).getTime();
-		long timeOfLastSpotPrice = refSpotPrices.get(SpotInstaceTraceFormat.LAST).getTime();
+		grid = prepareGrid(cmd);
 
-		long folga = TimeUtil.ONE_MONTH;
-		long randomValue = (new Random()).nextInt((int) (timeOfLastSpotPrice - timeOfFirstSpotPrice - folga));
-
-		long randomPoint = randomValue;
-
-		availability = new SpotPriceFluctuation(spotTraceFilePath, timeOfFirstSpotPrice, randomPoint);
-
+		availability = prepareAvailabilityInput(spotTraceFilePath, refSpotPrices);
+		
 		workload = defineWorkloadToSpotInstances(cmd, grid.getMapOfPeers(), refSpotPrices);
-		JobEventDispatcher.getInstance().addListener((TwoStagePredictionWorkload)workload);
-		TaskEventDispatcher.getInstance().addListener((TwoStagePredictionWorkload)workload);
 
 		jobScheduler = createSpotInstancesScheduler(cmd, refSpotPrices);
 
-		BufferedWriter bw = null;
-		if (cmd.hasOption(UTILIZATION)) {
-			bw = createBufferedWriter((File) cmd.getOptionObject(UTILIZATION));
-			grid.setUtilizationBuffer(bw);
-		}
+		BufferedWriter utilizationBuffer = setUpUtilizationBuffer(cmd, grid);
 
-		oursim = new OurSim(EventQueue.getInstance(), grid, jobScheduler, workload, availability);
-
-		oursim.setActiveEntity(new SpotInstancesActiveEntity());
+		registerJobEventListeners(printOutput, (TwoStagePredictionWorkload)workload);
 		
+		//prepare and start the simulation
+		oursim = new OurSim(EventQueue.getInstance(), grid, jobScheduler, workload, availability);
+		oursim.setActiveEntity(new SpotInstancesActiveEntity());
 		oursim.start();
 
-		printOutput.close();
-
-		FileWriter fw = new FileWriter(cmd.getOptionValue(OUTPUT), true);
+		//get simulation summary statistics
 		stopWatch.stop();
+		printSummaryStatistics(stopWatch, cmd, compElemEventCounter, jobScheduler, grid);
+		
+		//release allocated resources
+		releaseResources(cmd, printOutput, compElemEventCounter, workload, availability, utilizationBuffer);
+
+	}
+
+	private static void releaseResources(CommandLine cmd, PrintOutput printOutput,
+			ComputingElementEventCounter compElemEventCounter, Workload workload,
+			Input<? extends AvailabilityRecord> availability, BufferedWriter utilizationBuffer) {
+		closeBuffers(cmd, utilizationBuffer, printOutput);
+		
+		deregisterJobEventListeners(printOutput, compElemEventCounter, (TwoStagePredictionWorkload) workload);
+		deregisterTaskEventListeners((TaskEventListener) compElemEventCounter);
+		
+		EventQueue.getInstance().clear();
+		
+		availability.close();
+		workload.close();
+	}
+
+	private static void printSummaryStatistics(StopWatch stopWatch, CommandLine cmd,
+			ComputingElementEventCounter compElemEventCounter, JobSchedulerPolicy jobScheduler, Grid grid)
+			throws IOException {
+		FileWriter fw = new FileWriter(cmd.getOptionValue(OUTPUT), true);
 		fw.write("# Simulation                  duration:" + stopWatch + ".\n");
 
 		EC2Instance ec2Instance = ((SpotInstancesMultiCoreSchedulerLimited) jobScheduler).getEc2Instance();
@@ -169,18 +183,37 @@ public class SpotCLI {
 				stopWatch.toString()));
 
 		fw.close();
+	}
 
+	private static void closeBuffers(CommandLine cmd, BufferedWriter ub, PrintOutput po) {
+		po.close();
 		if (cmd.hasOption(UTILIZATION)) {
-			closeBufferedWriter(bw);
+			closeBufferedWriter(ub);
+		}	
+	}
+
+	private static BufferedWriter setUpUtilizationBuffer(CommandLine cmd, Grid grid) {
+		BufferedWriter bw = null;
+		if (cmd.hasOption(UTILIZATION)) {
+			bw = createBufferedWriter((File) cmd.getOptionObject(UTILIZATION));
+			grid.setUtilizationBuffer(bw);
 		}
+		return bw;
+	}
 
-		JobEventDispatcher.getInstance().removeListener(printOutput);
-		JobEventDispatcher.getInstance().removeListener(compElemEventCounter);
-		TaskEventDispatcher.getInstance().removeListener(compElemEventCounter);
-		EventQueue.getInstance().clear();
-		availability.close();
-		workload.close();
+	private static Input<? extends AvailabilityRecord> prepareAvailabilityInput(String spotTraceFilePath,
+			List<SpotPrice> refSpotPrices) throws FileNotFoundException, ParseException {
+		Input<? extends AvailabilityRecord> availability;
+		long timeOfFirstSpotPrice = refSpotPrices.get(SpotInstaceTraceFormat.FIRST).getTime();
+		long timeOfLastSpotPrice = refSpotPrices.get(SpotInstaceTraceFormat.LAST).getTime();
 
+		long folga = TimeUtil.ONE_MONTH;
+		long randomValue = (new Random()).nextInt((int) (timeOfLastSpotPrice - timeOfFirstSpotPrice - folga));
+
+		long randomPoint = randomValue;
+
+		availability = new SpotPriceFluctuation(spotTraceFilePath, timeOfFirstSpotPrice, randomPoint);
+		return availability;
 	}
 
 	private static Grid prepareGrid(CommandLine cmd) throws FileNotFoundException {
@@ -191,75 +224,7 @@ public class SpotCLI {
 		return grid;
 	}
 
-	static Workload defineWorkloadToSpotInstances(CommandLine cmd, Map<String, Peer> peersMap, List<SpotPrice> refSpotPrices) throws IOException,
-			java.text.ParseException, FileNotFoundException {
-		double bidValue = -1;
-		try {
-			bidValue = Double.parseDouble(cmd.getOptionValue(BID_VALUE));
-		} catch (NumberFormatException e) {
-			if (cmd.getOptionValue(BID_VALUE).equals("min")) {
-				bidValue = refSpotPrices.get(SpotInstaceTraceFormat.LOWEST).getPrice();
-			} else if (cmd.getOptionValue(BID_VALUE).equals("max")) {
-				bidValue = refSpotPrices.get(SpotInstaceTraceFormat.HIGHEST).getPrice();
-			} else if (cmd.getOptionValue(BID_VALUE).equals("med")) {
-				double med = refSpotPrices.get(SpotInstaceTraceFormat.MEAN).getPrice();
-				bidValue = med;
-			} else {
-				System.err.println("bid inválido.");
-				System.exit(10);
-			}
-		}
-		return new TwoStagePredictionWorkload(cmd.getOptionValue(WORKLOAD), peersMap, 0, bidValue);
-	}
-
-	static JobSchedulerPolicy createSpotInstancesScheduler(CommandLine cmd, List<SpotPrice> refSpotPrices) throws FileNotFoundException,
-			java.text.ParseException {
-		JobSchedulerPolicy jobScheduler;
-		// String ec2InstancesFilePath = "resources/ec2_instances.txt";
-		File ec2InstancesFile = (File)cmd.getOptionObject(ALL_INSTANCE_TYPES);
-		EC2Instance ec2Instance;
-		if (cmd.hasOption(INSTANCE_TYPE)) {
-			ec2Instance = loadEC2InstancesTypes(ec2InstancesFile).get(cmd.getOptionValue(INSTANCE_TYPE));
-			EC2InstanceBadge badge = ec2Instance.getBadge(cmd.getOptionValue(INSTANCE_REGION), cmd.getOptionValue(INSTANCE_SO));
-		} else {
-			// us-west-1.windows.m2.4xlarge.csv
-			File f = new File(cmd.getOptionValue(AVAILABILITY));
-			String spotTraceFileName = f.getName();
-			String resto = spotTraceFileName;
-			String region = resto.substring(0, resto.indexOf("."));
-			resto = resto.substring(resto.indexOf(".") + 1);
-			String so = resto.substring(0, resto.indexOf("."));
-			resto = resto.substring(resto.indexOf(".") + 1);
-			String type = resto.substring(0, resto.lastIndexOf("."));
-			ec2Instance = loadEC2InstancesTypes(ec2InstancesFile).get(type);
-			ec2Instance.name = type;
-			ec2Instance.group = type.substring(0, type.indexOf("."));
-			ec2Instance.fileName = f.getName();
-		}
-		Peer spotInstancesPeer = new Peer("SpotInstancesPeer", FifoSharingPolicy.getInstance());
-
-		SpotPrice initialSpotPrice = refSpotPrices.get(SpotInstaceTraceFormat.FIRST);
-		int limit = Integer.parseInt(cmd.getOptionValue(LIMIT));
-		long speed = ec2Instance.speedPerCore;
-		jobScheduler = new SpotInstancesMultiCoreSchedulerLimited(spotInstancesPeer, initialSpotPrice, ec2Instance, limit, cmd.hasOption(GROUP_BY_PEER));
-		SpotPriceEventDispatcher.getInstance().addListener((SpotInstancesScheduler) jobScheduler);
-		return jobScheduler;
-	}
-
-	static Map<String, EC2Instance> loadEC2InstancesTypes(File file) throws FileNotFoundException {
-		Ec2InstanceParser parser = new Ec2InstanceParser(new FileInputStream(file));
-		Map<String, EC2Instance> ec2Instances = new HashMap<String, EC2Instance>();
-		try {
-			List<EC2Instance> result = parser.parse();
-			for (EC2Instance ec2Instance : result) {
-				ec2Instances.put(ec2Instance.type, ec2Instance);
-			}
-		} catch (Exception e) {
-			System.exit(3);
-		}
-		return ec2Instances;
-	}
-
+	
 	public static Options prepareOptions() {
 		Options options = new Options();
 		Option availability = new Option(AVAILABILITY, "availability", true, "Arquivo com a caracterização da disponibilidade para todos os recursos.");
@@ -304,28 +269,6 @@ public class SpotCLI {
 		// "Velocidade das máquinas spot instance.");
 		options.addOption(LIMIT, "limit", true, "Número máximo de instâncias simultâneas que podem ser alocadas por usuário.");
 		return options;
-	}
-
-	private static BufferedWriter createBufferedWriter(File utilizationFile) {
-		try {
-			if (utilizationFile != null) {
-				return new BufferedWriter(new FileWriter(utilizationFile));
-			}
-			return null;
-		} catch (IOException e) {
-			e.printStackTrace();
-			throw new RuntimeException(e);
-		}
-	}
-
-	private static void closeBufferedWriter(BufferedWriter bw) {
-		try {
-			if (bw != null) {
-				bw.close();
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
 	}
 
 }

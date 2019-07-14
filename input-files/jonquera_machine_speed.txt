@@ -1,2 +1,2 @@
 name     speed  peer
-p_1-m_1   3.00     1
+p_1-m_1   1.00     1
