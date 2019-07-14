@@ -64,7 +64,7 @@ import com.edigley.cloudsim.entities.EC2Instance;
 import com.edigley.cloudsim.entities.EC2InstanceBadge;
 import com.edigley.cloudsim.io.input.SpotPrice;
 import com.edigley.cloudsim.io.input.SpotPriceFluctuation;
-import com.edigley.cloudsim.io.input.workload.IosupWorkloadWithBidValue;
+import com.edigley.cloudsim.io.input.workload.TwoStagePredictionWorkload;
 import com.edigley.cloudsim.parser.Ec2InstanceParser;
 import com.edigley.cloudsim.policy.SpotInstancesMultiCoreSchedulerLimited;
 import com.edigley.cloudsim.policy.SpotInstancesScheduler;
@@ -132,6 +132,8 @@ public class SpotCLI {
 		availability = new SpotPriceFluctuation(spotTraceFilePath, timeOfFirstSpotPrice, randomPoint);
 
 		workload = defineWorkloadToSpotInstances(cmd, grid.getMapOfPeers(), refSpotPrices);
+		JobEventDispatcher.getInstance().addListener((TwoStagePredictionWorkload)workload);
+		TaskEventDispatcher.getInstance().addListener((TwoStagePredictionWorkload)workload);
 
 		jobScheduler = createSpotInstancesScheduler(cmd, refSpotPrices);
 
@@ -144,7 +146,7 @@ public class SpotCLI {
 		oursim = new OurSim(EventQueue.getInstance(), grid, jobScheduler, workload, availability);
 
 		oursim.setActiveEntity(new SpotInstancesActiveEntity());
-
+		
 		oursim.start();
 
 		printOutput.close();
@@ -176,6 +178,8 @@ public class SpotCLI {
 		JobEventDispatcher.getInstance().removeListener(compElemEventCounter);
 		TaskEventDispatcher.getInstance().removeListener(compElemEventCounter);
 		EventQueue.getInstance().clear();
+		availability.close();
+		workload.close();
 
 	}
 
@@ -205,7 +209,7 @@ public class SpotCLI {
 				System.exit(10);
 			}
 		}
-		return new IosupWorkloadWithBidValue(cmd.getOptionValue(WORKLOAD), peersMap, 0, bidValue);
+		return new TwoStagePredictionWorkload(cmd.getOptionValue(WORKLOAD), peersMap, 0, bidValue);
 	}
 
 	static JobSchedulerPolicy createSpotInstancesScheduler(CommandLine cmd, List<SpotPrice> refSpotPrices) throws FileNotFoundException,
