@@ -12,7 +12,7 @@ import java.util.Scanner;
 import com.edigley.cloudsim.io.input.SpotPrice;
 import com.edigley.cloudsim.io.input.SpotPriceFluctuation;
 
-public class SpotInstaceTraceFormat {
+public class SpotInstanceTraceFormat {
 
 	// 2009-11-30 19:33:57,0.039
 	private static SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -23,7 +23,8 @@ public class SpotInstaceTraceFormat {
 		String time = scLine.next();
 		Double price = Double.parseDouble(scLine.next());
 		Date instant = formatter.parse(time);
-		return new SpotPrice("nome da máquina", instant, price, startingTime);
+		scLine.close();
+		return new SpotPrice("machine_name", instant, price, startingTime);
 	}
 
 	@Deprecated
@@ -38,12 +39,12 @@ public class SpotInstaceTraceFormat {
 
 	public static List<SpotPrice> extractTimeFromFirstAndLastSpotPrice(String spotTraceFilePath) throws ParseException, FileNotFoundException {
 		Scanner sc = new Scanner(new File(spotTraceFilePath));
-		SpotPrice firstSpotPriceRecord = SpotInstaceTraceFormat.createSpotPriceFromSpotTraceRecord(sc.nextLine(), 0);
+		SpotPrice firstSpotPriceRecord = SpotInstanceTraceFormat.createSpotPriceFromSpotTraceRecord(sc.nextLine(), 0);
 		String lastLine = null;
 		while (sc.hasNextLine()) {
 			lastLine = sc.nextLine();
 		}
-		SpotPrice lastSpotPriceRecord = SpotInstaceTraceFormat.createSpotPriceFromSpotTraceRecord(lastLine, 0);
+		SpotPrice lastSpotPriceRecord = SpotInstanceTraceFormat.createSpotPriceFromSpotTraceRecord(lastLine, 0);
 		List<SpotPrice> spotprices = new ArrayList<SpotPrice>();
 		spotprices.add(firstSpotPriceRecord);
 		spotprices.add(lastSpotPriceRecord);
@@ -57,14 +58,16 @@ public class SpotInstaceTraceFormat {
 		while (sc.hasNextLine()) {
 			lastLine = sc.nextLine();
 		}
-		SpotPrice lastSpotPriceRecord = SpotInstaceTraceFormat.createSpotPriceFromSpotTraceRecord(lastLine, 0);
+		SpotPrice lastSpotPriceRecord = SpotInstanceTraceFormat.createSpotPriceFromSpotTraceRecord(lastLine, 0);
+		sc.close();
 		return lastSpotPriceRecord;
 	}
 
 	@Deprecated
 	public static SpotPrice extractFirstSpotPrice(String spotTraceFilePath) throws ParseException, FileNotFoundException {
 		Scanner sc = new Scanner(new File(spotTraceFilePath));
-		SpotPrice firstSpotPriceRecord = SpotInstaceTraceFormat.createSpotPriceFromSpotTraceRecord(sc.nextLine(), 0);
+		SpotPrice firstSpotPriceRecord = SpotInstanceTraceFormat.createSpotPriceFromSpotTraceRecord(sc.nextLine(), 0);
+		sc.close();
 		return firstSpotPriceRecord;
 	}
 
@@ -78,6 +81,7 @@ public class SpotInstaceTraceFormat {
 				highestSpotPrice = polledSpotPrice;
 			}
 		}
+		spotTrace.close();
 		return highestSpotPrice;
 	}
 
@@ -91,6 +95,7 @@ public class SpotInstaceTraceFormat {
 				lowestSpotPrice = polledSpotPrice;
 			}
 		}
+		spotTrace.close();
 		return lowestSpotPrice;
 	}
 
@@ -135,6 +140,7 @@ public class SpotInstaceTraceFormat {
 		spotprices.add(MEAN, meanSpotPrice);
 		spotprices.add(HIGHEST, highestSpotPrice);
 		spotprices.add(LAST, lastSpotPriceRecord);
+		spotTrace.close();
 		return spotprices;
 	}
 

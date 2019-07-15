@@ -60,7 +60,7 @@ public class EC2InstancesSchedulerUtils {
 		}
 		Peer spotInstancesPeer = new Peer("SpotInstancesPeer", FifoSharingPolicy.getInstance());
 
-		SpotPrice initialSpotPrice = refSpotPrices.get(SpotInstaceTraceFormat.FIRST);
+		SpotPrice initialSpotPrice = refSpotPrices.get(SpotInstanceTraceFormat.FIRST);
 		int limit = Integer.parseInt(cmd.getOptionValue(LIMIT));
 		long speed = ec2Instance.speedPerCore;
 		jobScheduler = new SpotInstancesMultiCoreSchedulerLimited(spotInstancesPeer, initialSpotPrice, ec2Instance,
@@ -76,11 +76,11 @@ public class EC2InstancesSchedulerUtils {
 			bidValue = Double.parseDouble(cmd.getOptionValue(BID_VALUE));
 		} catch (NumberFormatException e) {
 			if (cmd.getOptionValue(BID_VALUE).equals("min")) {
-				bidValue = refSpotPrices.get(SpotInstaceTraceFormat.LOWEST).getPrice();
+				bidValue = refSpotPrices.get(SpotInstanceTraceFormat.LOWEST).getPrice();
 			} else if (cmd.getOptionValue(BID_VALUE).equals("max")) {
-				bidValue = refSpotPrices.get(SpotInstaceTraceFormat.HIGHEST).getPrice();
+				bidValue = refSpotPrices.get(SpotInstanceTraceFormat.HIGHEST).getPrice();
 			} else if (cmd.getOptionValue(BID_VALUE).equals("med")) {
-				double med = refSpotPrices.get(SpotInstaceTraceFormat.MEAN).getPrice();
+				double med = refSpotPrices.get(SpotInstanceTraceFormat.MEAN).getPrice();
 				bidValue = med;
 			} else {
 				System.err.println("bid inválido.");

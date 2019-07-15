@@ -1,4 +1,4 @@
-vCPU 	ECU 	Memory (GiB) 	Instance Storage (GB) 	Linux/UNIX Usage
+instance	vCPU 	ECU 	Memory_GB 	price_per_hour
 General Purpose - Current Generation
 a1.medium 	1 	N/A 	2 GiB 	EBS Only 	$0.0255 per Hour
 a1.large 	2 	N/A 	4 GiB 	EBS Only 	$0.051 per Hour

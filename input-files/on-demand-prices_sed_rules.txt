@@ -1,0 +1,78 @@
+s/Instance Storage (GB)//
+s/EBS Only//
+s/1 x 75 NVMe SSD//
+s/1 x 150 NVMe SSD//
+s/1 x 300 NVMe SSD//
+s/2 x 300 NVMe SSD//
+s/2 x 900 NVMe SSD//
+s/4 x 900 NVMe SSD//
+s/1 x 75 NVMe SSD//
+s/1 x 150 NVMe SSD//
+s/1 x 300 NVMe SSD//
+s/2 x 300 NVMe SSD//
+s/2 x 600 NVMe SSD//
+s/2 x 900 NVMe SSD//
+s/4 x 600 NVMe SSD//
+s/4 x 900 NVMe SSD//
+s/4 x 900 NVMe SSD//
+s/1 x 50 NVMe SSD//
+s/1 x 100 NVMe SSD//
+s/1 x 200 NVMe SSD//
+s/1 x 400 NVMe SSD//
+s/1 x 900 NVMe SSD//
+s/2 x 900 NVMe SSD//
+s/1 x 1920 SSD//
+s/2 x 1920 SSD//
+s/1 x 120 SSD//
+s/1 x 240 SSD//
+s/1 x 480 SSD//
+s/1 x 960 SSD//
+s/1 x 1920 SSD//
+s/2 x 1,920 SSD//
+s/1 x 75 NVMe SSD//
+s/1 x 150 NVMe SSD//
+s/1 x 300 NVMe SSD//
+s/2 x 300 NVMe SSD//
+s/2 x 900 NVMe SSD//
+s/4 x 900 NVMe SSD//
+s/1 x 75 NVMe SSD//
+s/1 x 150 NVMe SSD//
+s/1 x 300 NVMe SSD//
+s/2 x 300 NVMe SSD//
+s/2 x 600 NVMe SSD//
+s/2 x 900 NVMe SSD//
+s/4 x 600 NVMe SSD//
+s/4 x 900 NVMe SSD//
+s/4 x 900 NVMe SSD//
+s/1 x 475 NVMe SSD//
+s/1 x 950 NVMe SSD//
+s/1 x 1900 NVMe SSD//
+s/2 x 1900 NVMe SSD//
+s/4 x 1900 NVMe SSD//
+s/8 x 1900 NVMe SSD//
+s/8 x 1900 NVMe SSD//
+s/1 x 1250 NVMe SSD//
+s/1 x 2500 NVMe SSD//
+s/2 x 2500 NVMe SSD//
+s/1 x 7500 NVMe SSD//
+s/2 x 7500 NVMe SSD//
+s/4 x 7500 NVMe SSD//
+s/8 x 7500 NVMe SSD//
+s/12 x 2000 HDD//
+s/24 x 2000 HDD//
+s/1 x 2000 HDD//
+s/2 x 2000 HDD//
+s/4 x 2000 HDD//
+s/8 x 2000 HDD//
+s/3 x 2000 HDD//
+s/6 x 2000 HDD//
+s/GiB//
+s/per Hour//
+s/\$//
+s/General Purpose - Current Generation//
+s/Compute Optimized - Current Generation//
+s/GPU Instances - Current Generation//
+s/Memory Optimized - Current Generation//
+s/Storage Optimized - Current Generation//
+/^$/d
+s/Variable/Var/

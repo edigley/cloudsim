@@ -33,7 +33,7 @@ import com.edigley.cloudsim.io.input.SpotPriceFluctuation;
 import com.edigley.cloudsim.io.input.workload.TwoStagePredictionWorkload;
 import com.edigley.cloudsim.policy.SpotInstancesMultiCoreSchedulerLimited;
 import com.edigley.cloudsim.simulationevents.SpotInstancesActiveEntity;
-import com.edigley.cloudsim.util.SpotInstaceTraceFormat;
+import com.edigley.cloudsim.util.SpotInstanceTraceFormat;
 import com.edigley.oursim.OurSim;
 import com.edigley.oursim.dispatchableevents.taskevents.TaskEventListener;
 import com.edigley.oursim.entities.Grid;
@@ -82,7 +82,7 @@ public class SpotCloud {
 		String spotTraceFilePath = cmd.getOptionValue(AVAILABILITY);
 		
 		//a summary of the spot prices
-		List<SpotPrice> refSpotPrices = SpotInstaceTraceFormat.extractReferenceSpotPrices(spotTraceFilePath);
+		List<SpotPrice> refSpotPrices = SpotInstanceTraceFormat.extractReferenceSpotPrices(spotTraceFilePath);
 
 		grid = prepareGrid(cmd);
 
@@ -132,11 +132,17 @@ public class SpotCloud {
 	private static Input<? extends AvailabilityRecord> prepareAvailabilityInput(String spotTraceFilePath,
 			List<SpotPrice> refSpotPrices) throws FileNotFoundException, ParseException {
 		Input<? extends AvailabilityRecord> availability;
-		long timeOfFirstSpotPrice = refSpotPrices.get(SpotInstaceTraceFormat.FIRST).getTime();
-		long timeOfLastSpotPrice = refSpotPrices.get(SpotInstaceTraceFormat.LAST).getTime();
+		long timeOfFirstSpotPrice = refSpotPrices.get(SpotInstanceTraceFormat.FIRST).getTime();
+		long timeOfLastSpotPrice = refSpotPrices.get(SpotInstanceTraceFormat.LAST).getTime();
 
 		long folga = TimeUtil.ONE_MONTH;
-		long randomValue = (new Random()).nextInt((int) (timeOfLastSpotPrice - timeOfFirstSpotPrice - folga));
+		long spotTraceTimeSpan = (timeOfLastSpotPrice - timeOfFirstSpotPrice);
+		long randomValue;
+		if (spotTraceTimeSpan > folga) {
+			randomValue = (new Random()).nextInt((int) (spotTraceTimeSpan - folga));		
+		} else {
+			randomValue = 0;
+		}
 
 		long randomPoint = randomValue;
 

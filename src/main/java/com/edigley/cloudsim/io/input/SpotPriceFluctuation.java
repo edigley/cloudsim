@@ -7,7 +7,7 @@ import java.util.PriorityQueue;
 import java.util.Scanner;
 
 import com.edigley.oursim.io.input.InputAbstract;
-import com.edigley.cloudsim.util.SpotInstaceTraceFormat;
+import com.edigley.cloudsim.util.SpotInstanceTraceFormat;
 
 public class SpotPriceFluctuation extends InputAbstract<SpotPrice> {
 
@@ -37,14 +37,15 @@ public class SpotPriceFluctuation extends InputAbstract<SpotPrice> {
 		long previousTime = -1;
 		while (sc.hasNextLine()) {
 			String lastReadLine = sc.nextLine();
-			SpotPrice spotPriceRecord = SpotInstaceTraceFormat.createSpotPriceFromSpotTraceRecord(lastReadLine, this.startingTime);
+			SpotPrice spotPriceRecord = SpotInstanceTraceFormat.createSpotPriceFromSpotTraceRecord(lastReadLine, this.startingTime);
 			assert spotPriceRecord.getTime() >= previousTime;
 			previousTime = spotPriceRecord.getTime();
 			if (spotPriceRecord.getTime() >= this.randomPoint) {
-				SpotPrice spotPrice = SpotInstaceTraceFormat.createSpotPriceFromSpotTraceRecord(lastReadLine, this.startingTime + this.randomPoint);
+				SpotPrice spotPrice = SpotInstanceTraceFormat.createSpotPriceFromSpotTraceRecord(lastReadLine, this.startingTime + this.randomPoint);
 				this.inputs.add(spotPrice);
 			}
 		}
+		sc.close();
 	}
 
 }
