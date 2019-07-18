@@ -113,7 +113,7 @@ public class SpotInstancesMultiCoreSchedulerLimited extends SpotInstancesSchedul
 	}
 
 	private String getCloudUserId(Task Task) {
-		return onlyOneUserByPeer ? Task.getSourceJob().getSourcePeer().getName() : Task.getSourceJob().getUserId();
+		return onlyOneUserByPeer ? /*Task.getSourceJob().getSourcePeer().getName()*/ "cloud" : Task.getSourceJob().getUserId();
 	}
 
 	private void startTask(Task queuedTask, Processor processor) {
@@ -218,6 +218,8 @@ public class SpotInstancesMultiCoreSchedulerLimited extends SpotInstancesSchedul
 				}
 				this.queuedTasks.get(cloudUserId).add(Task);
 			}
+			
+			assert this.numberOfAllocatedMachinesForUser.get(cloudUserId) <= limit;
 
 		} else {
 			System.out.println("task.getBidValue() < currentSpotPrice.getPrice(): " + Task.getBidValue() + " < " + currentSpotPrice.getPrice());

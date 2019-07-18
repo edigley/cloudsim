@@ -1,0 +1,2 @@
+#site	num_cpus
+1 1

@@ -7,6 +7,7 @@ import static com.edigley.cloudsim.ui.SpotCLI.INSTANCE_REGION;
 import static com.edigley.cloudsim.ui.SpotCLI.INSTANCE_SO;
 import static com.edigley.cloudsim.ui.SpotCLI.INSTANCE_TYPE;
 import static com.edigley.cloudsim.ui.SpotCLI.LIMIT;
+import static com.edigley.cloudsim.ui.SpotCLI.SCHEDULER;
 import static com.edigley.cloudsim.util.EC2InstancesTypesUtils.loadEC2InstancesTypes;
 import static com.edigley.oursim.ui.CLI.AVAILABILITY;
 import static com.edigley.oursim.ui.CLI.WORKLOAD;
@@ -18,11 +19,13 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.ParseException;
 
 import com.edigley.cloudsim.dispatchableevents.spotinstances.SpotPriceEventDispatcher;
 import com.edigley.cloudsim.entities.EC2Instance;
 import com.edigley.cloudsim.entities.EC2InstanceBadge;
 import com.edigley.cloudsim.io.input.SpotPrice;
+import com.edigley.cloudsim.io.input.workload.IosupWorkloadWithBidValue;
 import com.edigley.cloudsim.io.input.workload.TwoStagePredictionWorkload;
 import com.edigley.cloudsim.policy.SpotInstancesMultiCoreSchedulerLimited;
 import com.edigley.cloudsim.policy.SpotInstancesScheduler;
@@ -34,10 +37,10 @@ import com.edigley.oursim.policy.JobSchedulerPolicy;
 public class EC2InstancesSchedulerUtils {
 
 	public static JobSchedulerPolicy createSpotInstancesScheduler(CommandLine cmd, List<SpotPrice> refSpotPrices)
-			throws FileNotFoundException, java.text.ParseException {
+			throws FileNotFoundException, java.text.ParseException, ParseException {
 		JobSchedulerPolicy jobScheduler;
 		// String ec2InstancesFilePath = "resources/ec2_instances.txt";
-		File ec2InstancesFile = (File) cmd.getOptionObject(ALL_INSTANCE_TYPES);
+		File ec2InstancesFile = (File) cmd.getParsedOptionValue(ALL_INSTANCE_TYPES);
 		EC2Instance ec2Instance;
 		if (cmd.hasOption(INSTANCE_TYPE)) {
 			ec2Instance = loadEC2InstancesTypes(ec2InstancesFile).get(cmd.getOptionValue(INSTANCE_TYPE));
@@ -63,14 +66,20 @@ public class EC2InstancesSchedulerUtils {
 		SpotPrice initialSpotPrice = refSpotPrices.get(SpotInstanceTraceFormat.FIRST);
 		int limit = Integer.parseInt(cmd.getOptionValue(LIMIT));
 		long speed = ec2Instance.speedPerCore;
-		jobScheduler = new SpotInstancesMultiCoreSchedulerLimited(spotInstancesPeer, initialSpotPrice, ec2Instance,
-				limit, cmd.hasOption(GROUP_BY_PEER));
+		if (cmd.getOptionValue(SCHEDULER).equals("tsp")) {
+			jobScheduler = new SpotInstancesMultiCoreSchedulerLimited(spotInstancesPeer, initialSpotPrice, ec2Instance,
+					limit, cmd.hasOption(GROUP_BY_PEER));
+		} else {
+			jobScheduler = new SpotInstancesMultiCoreSchedulerLimited(spotInstancesPeer, initialSpotPrice, ec2Instance,
+					limit, cmd.hasOption(GROUP_BY_PEER));
+		}
 		SpotPriceEventDispatcher.getInstance().addListener((SpotInstancesScheduler) jobScheduler);
 		return jobScheduler;
 	}
 
 	public static Workload defineWorkloadToSpotInstances(CommandLine cmd, Map<String, Peer> peersMap,
 			List<SpotPrice> refSpotPrices) throws IOException, java.text.ParseException, FileNotFoundException {
+		Workload workload;
 		double bidValue = -1;
 		try {
 			bidValue = Double.parseDouble(cmd.getOptionValue(BID_VALUE));
@@ -87,7 +96,12 @@ public class EC2InstancesSchedulerUtils {
 				System.exit(10);
 			}
 		}
-		return new TwoStagePredictionWorkload(cmd.getOptionValue(WORKLOAD), peersMap, 0, bidValue);
+		if (cmd.getOptionValue(SCHEDULER).equals("tsp")) {
+			workload = new TwoStagePredictionWorkload(cmd.getOptionValue(WORKLOAD), peersMap, 0, bidValue);
+		} else {
+			workload = new IosupWorkloadWithBidValue(cmd.getOptionValue(WORKLOAD), peersMap, 0, bidValue);
+		}
+		return workload;
 	}
 
 }

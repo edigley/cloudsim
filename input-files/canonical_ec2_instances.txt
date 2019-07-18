@@ -1,0 +1,1 @@
+"m1.small"	   1.7		"1-ECU[1x1]"		 160.0		32	[ ( "US - N. Virginia", 0.085, 0.12), ( "US - N. California", 0.095, 0.13), ( "EU - Ireland", 0.095, 0.12), ( "APAC - Singapore", 0.095, 0.12), ]

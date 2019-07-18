@@ -1,5 +1,11 @@
 package com.edigley.cloudsim.ui;
 
+import static com.edigley.cloudsim.ui.SpotCLI.GROUP_BY_PEER;
+import static com.edigley.cloudsim.ui.SpotCLI.LIMIT;
+import static com.edigley.cloudsim.ui.SpotCLI.MACHINES_DESCRIPTION;
+import static com.edigley.cloudsim.ui.SpotCLI.NUM_USERS_BY_PEER;
+import static com.edigley.cloudsim.ui.SpotCLI.PEERS_DESCRIPTION;
+import static com.edigley.cloudsim.ui.SpotCLI.UTILIZATION;
 import static com.edigley.cloudsim.util.BufferedWriterUtils.closeBufferedWriter;
 import static com.edigley.cloudsim.util.BufferedWriterUtils.createBufferedWriter;
 import static com.edigley.cloudsim.util.EC2InstancesSchedulerUtils.createSpotInstancesScheduler;
@@ -7,7 +13,6 @@ import static com.edigley.cloudsim.util.EC2InstancesSchedulerUtils.defineWorkloa
 import static com.edigley.cloudsim.util.EventListenerUtils.deregisterJobEventListeners;
 import static com.edigley.cloudsim.util.EventListenerUtils.deregisterTaskEventListeners;
 import static com.edigley.cloudsim.util.EventListenerUtils.registerJobEventListeners;
-import static com.edigley.cloudsim.ui.SpotCLI.*;
 import static com.edigley.oursim.ui.CLI.AVAILABILITY;
 import static com.edigley.oursim.ui.CLI.OUTPUT;
 import static com.edigley.oursim.ui.CLI.VERBOSE;
@@ -20,11 +25,11 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.text.ParseException;
 import java.util.List;
 import java.util.Random;
 
 import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.ParseException;
 import org.apache.commons.lang.time.StopWatch;
 
 import com.edigley.cloudsim.entities.EC2Instance;
@@ -74,9 +79,9 @@ public class SpotCloud {
 		this.cmd = cmd;
 	}
 
-	public void prepare() throws ParseException, IOException {
+	public void prepare() throws java.text.ParseException, IOException, ParseException {
 		// Simulation output file for job related events
-		printOutput = new PrintOutput((File) cmd.getOptionObject(OUTPUT), false);
+		printOutput = new PrintOutput((File) cmd.getParsedOptionValue(OUTPUT), false);
 		compElemEventCounter = prepareOutputAccounting(cmd, cmd.hasOption(VERBOSE));
 
 		String spotTraceFilePath = cmd.getOptionValue(AVAILABILITY);
@@ -99,7 +104,7 @@ public class SpotCloud {
 		prepared = true;
 	}
 	
-	public void run() throws ParseException, IOException {
+	public void run() throws java.text.ParseException, IOException, ParseException {
 		if (!prepared) {
 			prepare();			
 		}
@@ -112,25 +117,25 @@ public class SpotCloud {
 		finished = true;
 	}
 	
-	private static Grid prepareGrid(CommandLine cmd) throws FileNotFoundException {
+	private static Grid prepareGrid(CommandLine cmd) throws FileNotFoundException, org.apache.commons.cli.ParseException {
 		Grid grid = null;
-		File peerDescriptionFile = (File) cmd.getOptionObject(PEERS_DESCRIPTION);
-		File machinesDescriptionFile = (File) cmd.getOptionObject(MACHINES_DESCRIPTION);
+		File peerDescriptionFile = (File) cmd.getParsedOptionValue(PEERS_DESCRIPTION);
+		File machinesDescriptionFile = (File) cmd.getParsedOptionValue(MACHINES_DESCRIPTION);
 		grid = SystemConfigurationCommandParser.readPeersDescription(peerDescriptionFile, machinesDescriptionFile, FifoSharingPolicy.getInstance());
 		return grid;
 	}
 	
-	private static BufferedWriter createUtilizationBuffer(CommandLine cmd, Grid grid) {
+	private static BufferedWriter createUtilizationBuffer(CommandLine cmd, Grid grid) throws org.apache.commons.cli.ParseException {
 		BufferedWriter bw = null;
 		if (cmd.hasOption(UTILIZATION)) {
-			bw = createBufferedWriter((File) cmd.getOptionObject(UTILIZATION));
+			bw = createBufferedWriter((File) cmd.getParsedOptionValue(UTILIZATION));
 			grid.setUtilizationBuffer(bw);
 		}
 		return bw;
 	}
 
 	private static Input<? extends AvailabilityRecord> prepareAvailabilityInput(String spotTraceFilePath,
-			List<SpotPrice> refSpotPrices) throws FileNotFoundException, ParseException {
+			List<SpotPrice> refSpotPrices) throws FileNotFoundException, java.text.ParseException {
 		Input<? extends AvailabilityRecord> availability;
 		long timeOfFirstSpotPrice = refSpotPrices.get(SpotInstanceTraceFormat.FIRST).getTime();
 		long timeOfLastSpotPrice = refSpotPrices.get(SpotInstanceTraceFormat.LAST).getTime();

@@ -18,6 +18,7 @@ import com.edigley.cloudsim.policy.SpotInstancesMultiCoreSchedulerLimited;
 import com.edigley.cloudsim.simulationevents.SpotInstancesActiveEntity;
 import com.edigley.oursim.AbstractOurSimAPITest;
 import com.edigley.oursim.OurSim;
+import com.edigley.oursim.dispatchableevents.jobevents.JobEventDispatcher;
 import com.edigley.oursim.dispatchableevents.taskevents.TaskEventDispatcher;
 import com.edigley.oursim.entities.Grid;
 import com.edigley.oursim.entities.Job;
@@ -34,18 +35,18 @@ import com.edigley.oursim.util.TimeUtil;
 
 public class CloudSchedulerLimitedTest extends AbstractOurSimAPITest {
 
-	protected static final long SIMULATION_TIME = TimeUtil.ONE_DAY;
+	protected final long SIMULATION_TIME = TimeUtil.ONE_DAY;
 	
-	protected static String INSTANCE_NAME = "m1.small";
-	protected static int NUMBER_OF_CORES = 1;
-	protected static int SPEED_PER_CORE = 1 ;
-	protected static double SPOT_PRICE = 0.1;
+	protected String INSTANCE_NAME = "m1.small";
+	protected int NUMBER_OF_CORES = 1;
+	protected int SPEED_PER_CORE = 1 ;
+	protected double SPOT_PRICE = 0.1;
 	
-	protected static final int NUMBER_OF_PEERS = 1;
-	protected static final int NUMBER_OF_RESOURCES_PER_PEER = 6;
+	protected final int NUMBER_OF_PEERS = 1;
+	protected final int NUMBER_OF_RESOURCES_PER_PEER = 1;
 	
-	protected static int NUMBER_OF_JOBS = 10;
-	protected static long JOB_RUNTIME = TimeUtil.FIFTEEN_MINUTES;
+	protected int NUMBER_OF_JOBS = 10;
+	protected long JOB_RUNTIME = TimeUtil.FIFTEEN_MINUTES;
 
 	protected SpotInstancesMultiCoreSchedulerLimited spotScheduler;
 
@@ -92,6 +93,7 @@ public class CloudSchedulerLimitedTest extends AbstractOurSimAPITest {
 		super.tearDown();
 		// cleans all simulations remaining events
 		TaskEventDispatcher.getInstance().clear();
+		JobEventDispatcher.getInstance().clear();
 		SpotPriceEventDispatcher.getInstance().clear();
 		EventQueue.getInstance().clear();
 	}
@@ -106,9 +108,9 @@ public class CloudSchedulerLimitedTest extends AbstractOurSimAPITest {
 
 	}
 	
-	protected void assertsSingleCore(int nOfJobs, long jobRuntime, int nOfBillableHours) {
+	protected void assertSchedulingBillableHours(int nOfJobs, long jobRuntime, int nOfBillableHours) {
 		
-		// 10 jobs each one with only one task
+		// n jobs each one with only one task
 		this.jobs = new ArrayList<Job>(nOfJobs);
 		this.workload = createWorkload(nOfJobs, jobRuntime, peers.get(0), jobs);
 		

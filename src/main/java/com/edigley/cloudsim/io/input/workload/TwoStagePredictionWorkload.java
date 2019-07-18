@@ -128,8 +128,8 @@ public class TwoStagePredictionWorkload implements Workload, JobEventListener, T
 		Job job = jobEvent.getSource();
 		currentTime = job.getFinishTime() + 1;
 		
-		String template = "---> jobFinished.[ jobId, subTime, startTime, makespan ]: [ %s, %s, %s, %s]";
-		System.out.println(String.format(template, job.getId(), job.getSubmissionTime(), job.getStartTime() ,job.getMakeSpan()));
+		//String template = "---> jobFinished.[ jobId, subTime, startTime, makespan ]: [ %s, %s, %s, %s]";
+		//System.out.println(String.format(template, job.getId(), job.getSubmissionTime(), job.getStartTime() ,job.getMakeSpan()));
 		
 		if (nextNextJob != null) {
 			Task theOriginalTask = nextNextJob.getTasks().get(0);
@@ -150,9 +150,9 @@ public class TwoStagePredictionWorkload implements Workload, JobEventListener, T
 
 	@Override
 	public void jobSubmitted(Event<Job> jobEvent) {
-		Job job = jobEvent.getSource();
-		String template = "---> jobSubmitted.[ jobId, subTime, startTime, makespan ]: [ %s, %s, %s, %s]";
-		System.out.println(String.format(template, job.getId(), job.getSubmissionTime(), job.getStartTime() ,job.getMakeSpan()));
+		//Job job = jobEvent.getSource();
+		//String template = "---> jobSubmitted.[ jobId, subTime, startTime, makespan ]: [ %s, %s, %s, %s]";
+		//System.out.println(String.format(template, job.getId(), job.getSubmissionTime(), job.getStartTime() ,job.getMakeSpan()));
 	}
 
 	@Override

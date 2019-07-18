@@ -318,7 +318,6 @@ public class SpotInstancesMultiCoreSchedulerLimitedTest extends AbstractOurSimAP
 
 		double totalCost = 0.0;
 		for (Job job : jobs) {
-			System.out.println(job.getCost());
 			totalCost += job.getCost();
 		}
 

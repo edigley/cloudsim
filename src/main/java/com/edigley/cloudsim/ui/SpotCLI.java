@@ -58,6 +58,8 @@ public class SpotCLI {
 	public static final String GROUP_BY_PEER = "gbp";
 	
 	public static final String NUM_USERS_BY_PEER = "upp";
+	
+	public static final String SCHEDULER = "sch";
 
 	public static void main(String[] args) throws Exception {
 
@@ -70,8 +72,9 @@ public class SpotCLI {
 		spotCloud.prepare();
 		spotCloud.run();
 
-		//get simulation summary statistics
 		stopWatch.stop();
+		
+		//get simulation summary statistics
 		spotCloud.printSummaryStatistics(stopWatch);
 		
 		//release allocated resources
@@ -88,6 +91,7 @@ public class SpotCLI {
 		Option machinesDescription = new Option(MACHINES_DESCRIPTION, "machinesdescription", true, "Descrição das máquinas presentes em cada peer.");
 		Option peersDescription = new Option(PEERS_DESCRIPTION, "peers_description", true, "Arquivo descrevendo os peers.");
 		Option allInstTypes = new Option(ALL_INSTANCE_TYPES, "all_instance_types", true, "Arquivo descrevendo todas as instâncias spot.");
+		Option scheduler = new Option(SCHEDULER, "scheduler", true, "Indica qual scheduler deverá ser usado.");
 		Option upp = new Option(NUM_USERS_BY_PEER, "upp", true, "O número de usuários por peer.");
 
 		workload.setRequired(true);
@@ -113,6 +117,7 @@ public class SpotCLI {
 		options.addOption(output);
 		options.addOption(allInstTypes);
 		options.addOption(upp);
+		options.addOption(scheduler);
 		options.addOption(SPOT_INSTANCES, "spot_instances", false, "Simular modelo amazon spot instances.");
 		options.addOption(INSTANCE_TYPE, "instance_type", true, "Tipo de instância a ser simulada.");
 		options.addOption(INSTANCE_REGION, "instance_region", true, "Região a qual a instância pertence.");
