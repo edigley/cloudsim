@@ -9,7 +9,7 @@ public class MultiCoreCloudSchedulerLimitedTest extends CloudSchedulerLimitedTes
 	public void setUp() throws Exception {
 		INSTANCE_NAME = "m1.2small";
 		NUMBER_OF_CORES = 2;
-		SPEED_PER_CORE = 1 ;
+		SPEED_PER_CORE_IN_ECU = 1 ;
 		SPOT_PRICE = 0.1;
 		super.setUp();
 	}

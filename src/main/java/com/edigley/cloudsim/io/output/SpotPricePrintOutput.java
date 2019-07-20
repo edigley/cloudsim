@@ -26,7 +26,7 @@ public class SpotPricePrintOutput extends OutputAdapter implements SpotPriceEven
 		BidValue bidValue = (BidValue) spotPriceEvent.getSource();
 		Task Task = bidValue.getTask();
 		String machineName = Task.getTaskExecution().getMachine().getName();
-		int processorId = Task.getTaskExecution().getProcessor().getId();
+		//int processorId = Task.getTaskExecution().getProcessors().get(0).getId();
 //		super.appendln("H:" + bidValue.getTime() + ":" + bidValue.getPrice() + ":" + Task.getId() + ":" + machineName + ":" + processorId);
 	}
 

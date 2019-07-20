@@ -11,7 +11,7 @@ public class BidValue implements SpotValue, Comparable<BidValue> {
 
 	private String instance;
 
-	private Task Task;
+	private Task task;
 
 	private long initialTime;
 
@@ -24,7 +24,7 @@ public class BidValue implements SpotValue, Comparable<BidValue> {
 		this.initialTime = time;
 		this.time = time;
 		this.value = value;
-		this.Task = Task;
+		this.task = Task;
 	}
 
 	public long getTime() {
@@ -71,7 +71,7 @@ public class BidValue implements SpotValue, Comparable<BidValue> {
 	}
 
 	public Task getTask() {
-		return Task;
+		return task;
 	}
 
 	public long getInitialTime() {

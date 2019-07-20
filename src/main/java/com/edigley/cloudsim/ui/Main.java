@@ -12,7 +12,7 @@ public class Main {
 		String isd = "input-files/canonical_site_description.txt";
 		String md = "input-files/canonical_machine_speed.txt";
 		String spi = "input-files/canonical_ec2_instances.txt";
-		String scheduler = "tsp";
+		String scheduler = "tsp"; //two-stage-prediction
 		String output = "spot-trace-persistent_output.txt";
 
 		String cmdPattern = "spotsim.jar -spot -l %s -bid max -w %s -av %s -pd %s -md %s -ait %s -sch %s -o %s";

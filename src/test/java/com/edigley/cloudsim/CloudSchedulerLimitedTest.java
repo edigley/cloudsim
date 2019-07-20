@@ -39,7 +39,7 @@ public class CloudSchedulerLimitedTest extends AbstractOurSimAPITest {
 	
 	protected String INSTANCE_NAME = "m1.small";
 	protected int NUMBER_OF_CORES = 1;
-	protected int SPEED_PER_CORE = 1 ;
+	protected int SPEED_PER_CORE_IN_ECU = 1 ;
 	protected double SPOT_PRICE = 0.1;
 	
 	protected final int NUMBER_OF_PEERS = 1;
@@ -67,8 +67,9 @@ public class CloudSchedulerLimitedTest extends AbstractOurSimAPITest {
 		initialSpotPrice = new SpotPrice(INSTANCE_NAME, new Date(), SPOT_PRICE);
 		this.limit = 2;
 		this.ec2Instance = new EC2Instance();
+		this.ec2Instance.name = INSTANCE_NAME;
 		this.ec2Instance.numCores = NUMBER_OF_CORES;
-		this.ec2Instance.speedPerCore = Math.round(SPEED_PER_CORE * Processor.EC2_COMPUTE_UNIT.getSpeed());
+		this.ec2Instance.speedPerCore = Math.round(SPEED_PER_CORE_IN_ECU * Processor.EC2_COMPUTE_UNIT.getSpeed());
 		
 		// the grid consists of only one peer
 		peers = new ArrayList<Peer>(NUMBER_OF_PEERS);
@@ -80,8 +81,7 @@ public class CloudSchedulerLimitedTest extends AbstractOurSimAPITest {
 		this.spotPriceEvents = createSpotPriceInput(TimeUtil.FIFTEEN_MINUTES);
 		
 		// at most 2 cloud instances
-		this.spotScheduler = new SpotInstancesMultiCoreSchedulerLimited(dataCenter, initialSpotPrice, ec2Instance, limit, true);
-		SpotPriceEventDispatcher.getInstance().addListener(this.spotScheduler);
+		this.spotScheduler = createSpotScheduler(ec2Instance, limit);
 
 		// 10 jobs each one with only one task
 		this.jobs = new ArrayList<Job>(NUMBER_OF_JOBS);
@@ -108,16 +108,37 @@ public class CloudSchedulerLimitedTest extends AbstractOurSimAPITest {
 
 	}
 	
-	protected void assertSchedulingBillableHours(int nOfJobs, long jobRuntime, int nOfBillableHours) {
+	protected void assertSchedulingBillableHours(int nOfSubmittedJobs, long jobRuntime, int nOfBillableHours) {
+		assertSchedulingBillableHours(nOfSubmittedJobs, nOfSubmittedJobs, jobRuntime, nOfBillableHours);
+	}
+	
+	protected void assertSchedulingBillableHours(int nOfSubmittedJobs, int nOfFinishedJobs, long jobRuntime, int nOfBillableHours, EC2Instance ec2Instance, int limit) {
+		this.ec2Instance = ec2Instance;
+		this.limit = limit;
+		this.spotScheduler = createSpotScheduler(ec2Instance, limit);
+		assertSchedulingBillableHours(nOfSubmittedJobs, nOfFinishedJobs, jobRuntime, nOfBillableHours);
+	}
+
+	private SpotInstancesMultiCoreSchedulerLimited createSpotScheduler(EC2Instance ec2Instance, int limit) {
+		SpotPriceEventDispatcher.getInstance().clear();
+		SpotInstancesMultiCoreSchedulerLimited spotScheduler = new SpotInstancesMultiCoreSchedulerLimited(dataCenter, initialSpotPrice, ec2Instance, limit, true);
+		SpotPriceEventDispatcher.getInstance().addListener(spotScheduler);
+		return spotScheduler;
+	}
+	
+	protected void assertSchedulingBillableHours(int nOfSubmittedJobs, int nOfFinishedJobs, long jobRuntime, int nOfBillableHours) {
 		
 		// n jobs each one with only one task
-		this.jobs = new ArrayList<Job>(nOfJobs);
-		this.workload = createWorkload(nOfJobs, jobRuntime, peers.get(0), jobs);
+		this.jobs = new ArrayList<Job>(nOfSubmittedJobs);
+		this.workload = createWorkload(nOfSubmittedJobs, jobRuntime, peers.get(0), jobs);
+		
+		//TaskEventDispatcher.getInstance().addListener(new TaskPrintOutput());
 		
 		// start the simulation
 		oursim = new OurSim(EventQueue.getInstance(), grid, spotScheduler, workload, spotPriceEvents);
 		oursim.setActiveEntity(new SpotInstancesActiveEntity());
 		oursim.start();
+		
 
 		// get the cost for all job executions
 		double totalCost = 0.0;
@@ -126,12 +147,12 @@ public class CloudSchedulerLimitedTest extends AbstractOurSimAPITest {
 		}
 
 		// expected cost. We need to consider the comparison delta, otherwise the test fails
-		assertEquals(nOfBillableHours * SPOT_PRICE, totalCost, 0);
+		assertEquals(nOfBillableHours * SPOT_PRICE, totalCost, 0.0000001);
 		
 		// expected number of events
-		assertEquals(nOfJobs, this.jobEventCounter.getNumberOfFinishedJobs());
+		assertEquals(nOfFinishedJobs, this.jobEventCounter.getNumberOfFinishedJobs());
 		assertEquals(0, this.jobEventCounter.getNumberOfPreemptionsForAllJobs());
-		assertEquals(nOfJobs, this.taskEventCounter.getNumberOfFinishedTasks());
+		assertEquals(nOfFinishedJobs, this.taskEventCounter.getNumberOfFinishedTasks());
 		assertEquals(0, this.taskEventCounter.getNumberOfPreemptionsForAllTasks());
 		
 	}
@@ -141,7 +162,7 @@ public class CloudSchedulerLimitedTest extends AbstractOurSimAPITest {
 		return peer;
 	}
 
-	private Workload createWorkload(final int numOfJobs, final long jobRuntime, final Peer peer, List<Job> jobs) {
+	protected Workload createWorkload(final int numOfJobs, final long jobRuntime, final Peer peer, List<Job> jobs) {
 		Workload workload = new WorkloadAbstract() {
 			@Override
 			protected void setUp() {
