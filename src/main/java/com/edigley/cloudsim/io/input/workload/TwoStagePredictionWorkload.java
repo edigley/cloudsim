@@ -41,7 +41,7 @@ public class TwoStagePredictionWorkload implements Workload, JobEventListener, T
 		
 		//skip the first line
 		String firstLine = scanner.nextLine();
-		String expectedHeader = "taskId time jobId jobSize runtime user peer TraceID Cluster.IAT Cluster.RT";
+		String expectedHeader = "taskId time jobId jobSize nCores runtime user peer TraceID Cluster.IAT Cluster.RT";
 		if (!firstLine.trim().replaceAll(" +", " ").equalsIgnoreCase(expectedHeader)) {
 			throw new RuntimeException("Header incompatible for this Workload. Expected Header: " + expectedHeader);
 		}
@@ -71,16 +71,21 @@ public class TwoStagePredictionWorkload implements Workload, JobEventListener, T
 			long submissionTime = scLine.nextLong();
 			long jobID = scLine.nextLong();
 			long jobSize = scLine.nextLong();
-			long runTime = scLine.nextLong();
+			int nCores = scLine.nextInt();
+			long runtime = scLine.nextLong();
 			String userID = scLine.next();
 			String siteID = scLine.next();
 			
 			assert peers.containsKey(siteID) : siteID + " -> " + line;
+			assert submissionTime > 0;
 			assert jobSize > 0;
+			assert nCores > 0;
+			assert runtime > 0;
 			
 			submissionTime = (currentTime != null) ? currentTime : submissionTime;
-			Task task = new Task(taskID, "", runTime, submissionTime, null);
+			Task task = new Task(taskID, "", runtime, submissionTime, null);
 			task.setBidValue(bidValue);
+			task.setNumberOfCores(nCores);
 
 			Job job = new Job(jobID, submissionTime, peers.get(siteID));
 			job.addTask(task);
@@ -113,6 +118,7 @@ public class TwoStagePredictionWorkload implements Workload, JobEventListener, T
 				Task nextTask = nextNextJob.getTasks().get(0);
 				Task taskToNextJob = new Task(nextTask.getId(), "", nextTask.getDuration(), nextTask.getSubmissionTime(), null);
 				taskToNextJob.setBidValue(bidValue);
+				taskToNextJob.setNumberOfCores(nextTask.getNumberOfCores());
 				firstJob.addTask(taskToNextJob);
 			}
 			this.nextJob = firstJob;
