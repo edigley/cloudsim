@@ -167,7 +167,7 @@ public class SpotCloud {
 		FileWriter fw = new FileWriter(cmd.getOptionValue(OUTPUT), true);
 		fw.write("# Simulation                  duration:" + stopWatch + ".\n");
 
-		EC2Instance ec2Instance = ((SpotInstancesMultiCoreSchedulerLimited) jobScheduler).getEc2Instance();
+		EC2Instance ec2Instance = ((SpotInstancesMultiCoreSchedulerLimited) jobScheduler).getEc2InstanceTypes().get(0);
 
 		int upp = Integer.parseInt(cmd.getOptionValue(NUM_USERS_BY_PEER, "0"));
 		fw.write(formatSummaryStatistics(compElemEventCounter, ec2Instance.name, cmd.getOptionValue(LIMIT), ec2Instance.group, cmd.hasOption(GROUP_BY_PEER),

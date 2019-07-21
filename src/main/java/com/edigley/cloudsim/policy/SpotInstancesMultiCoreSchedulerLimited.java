@@ -2,6 +2,7 @@ package com.edigley.cloudsim.policy;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -15,55 +16,53 @@ import com.edigley.oursim.entities.Task;
 import com.edigley.oursim.entities.TaskExecution;
 import com.edigley.oursim.io.input.workload.Workload;
 import com.edigley.oursim.policy.JobSchedulerPolicy;
-import com.edigley.oursim.util.BidirectionalMap;
 import com.google.common.collect.Lists;
 import com.edigley.cloudsim.dispatchableevents.spotinstances.SpotPriceEventListener;
+import com.edigley.cloudsim.entities.MachineAllocationManager;
 import com.edigley.cloudsim.entities.BidValue;
+import com.edigley.cloudsim.entities.CostAccountingManager;
 import com.edigley.cloudsim.entities.EC2Instance;
 import com.edigley.cloudsim.entities.SpotValue;
+import com.edigley.cloudsim.entities.TaskRunManager;
 import com.edigley.cloudsim.io.input.SpotPrice;
 
 public class SpotInstancesMultiCoreSchedulerLimited extends SpotInstancesScheduler implements JobSchedulerPolicy, SpotPriceEventListener {
 
-	private boolean onlyOneUserByPeer = false;
+	private boolean onlyOneUserPerPeer = false;
 
-	private int limit;
+	private MachineAllocationManager allocationManager;
+	
+	private TaskRunManager taskManager;
+	
+	private CostAccountingManager costManager;
 
-	private Map<String, Integer> numberOfAllocatedMachinesForUser;
-
-	private Map<String, List<Machine>> allocatedMachinesForUser;
-
-	private BidirectionalMap<BidValue, Machine> allocatedMachines;
-
+	//one queued list per user
 	private Map<String, List<Task>> queuedTasks;
-
-	private BidirectionalMap<Processor, Task> processor2Task;
-
-	private Map<Task, Double> accountedCost;
 
 	private SpotPrice currentSpotPrice;
 
-	private long nextMachineId = 1;
-
 	private final Peer theSpotPeer;
 
-	private EC2Instance ec2Instance;
+	private List<EC2Instance> ec2InstanceTypes;
 
 	public SpotInstancesMultiCoreSchedulerLimited(Peer thePeer, SpotPrice initialSpotPrice, EC2Instance ec2Instance, int limit, boolean onlyOneUserByPeer) {
-		super(thePeer, initialSpotPrice, ec2Instance.speedPerCore);
-		this.processor2Task = new BidirectionalMap<Processor, Task>();
-		this.allocatedMachines = new BidirectionalMap<BidValue, Machine>();
-		this.allocatedMachinesForUser = new HashMap<String, List<Machine>>();
-		this.numberOfAllocatedMachinesForUser = new HashMap<String, Integer>();
-		this.queuedTasks = new HashMap<String, List<Task>>();
-		this.accountedCost = new HashMap<Task, Double>();
-		this.currentSpotPrice = initialSpotPrice;
-		this.ec2Instance = ec2Instance;
-		this.theSpotPeer = thePeer;
-		this.limit = limit;
-		this.onlyOneUserByPeer = onlyOneUserByPeer;
+		this(thePeer, initialSpotPrice, Lists.newArrayList(ec2Instance), limit, onlyOneUserByPeer);
 	}
 
+	public SpotInstancesMultiCoreSchedulerLimited(Peer thePeer, SpotPrice initialSpotPrice, List<EC2Instance> ec2InstanceTypes, int limit, boolean onlyOneUserByPeer) {
+		super(thePeer, initialSpotPrice, ec2InstanceTypes.get(0).speedPerCore);
+		assert !ec2InstanceTypes.isEmpty();
+		this.allocationManager = new MachineAllocationManager(limit);
+		this.taskManager = new TaskRunManager();
+		this.costManager = new CostAccountingManager();
+		this.queuedTasks = new HashMap<String, List<Task>>();
+		this.currentSpotPrice = initialSpotPrice;
+		this.ec2InstanceTypes = ec2InstanceTypes;
+		this.theSpotPeer = thePeer;
+		this.onlyOneUserPerPeer = onlyOneUserByPeer;
+		Collections.sort(this.ec2InstanceTypes);
+	}
+	
 	@Override
 	public void schedule() {
 	}
@@ -95,15 +94,16 @@ public class SpotInstancesMultiCoreSchedulerLimited extends SpotInstancesSchedul
 		return false;
 	}
 
-	public void setOnlyOneUserByPeer(boolean onlyOneUserByPeer) {
-		this.onlyOneUserByPeer = onlyOneUserByPeer;
+	public void setOnlyOneUserPerPeer(boolean onlyOneUserPerPeer) {
+		this.onlyOneUserPerPeer = onlyOneUserPerPeer;
 	}
 
-	public boolean isOnlyOneUserByPeer() {
-		return onlyOneUserByPeer;
+	public boolean isOnlyOneUserPerPeer() {
+		return onlyOneUserPerPeer;
 	}
 
-	private static List<Processor> getAnyAvailableProcessors(List<Machine> machines, Task task) {
+	private List<Processor> getAnyEligibleFreeProcessors(String cloudUserId, Task task) {
+		List<Machine> machines = this.allocationManager.getAllocatedMachines(cloudUserId);
 		for (Machine machine : machines) {
 			if (task.isAnEligibleMachine(machine)) {
 				return machine.getFreeProcessors(task.getNumberOfCores());
@@ -113,7 +113,7 @@ public class SpotInstancesMultiCoreSchedulerLimited extends SpotInstancesSchedul
 	}
 
 	private String getCloudUserId(Task Task) {
-		return onlyOneUserByPeer ? /*Task.getSourceJob().getSourcePeer().getName()*/ "cloud" : Task.getSourceJob().getUserId();
+		return onlyOneUserPerPeer ? /*Task.getSourceJob().getSourcePeer().getName()*/ "cloud" : Task.getSourceJob().getUserId();
 	}
 
 	private void startTask(Task task, List<Processor> processors) {
@@ -122,12 +122,13 @@ public class SpotInstancesMultiCoreSchedulerLimited extends SpotInstancesSchedul
 		task.setStartTime(currentTime);
 		task.setTargetPeer(theSpotPeer);
 		// XXX TODO Pensar nas consequências da linha abaixo!!!!
-		this.accountedCost.put(task, 0.0);
+		this.taskManager.assignTask(processors.get(0), task);
+		this.costManager.startAccounting(task);
 		this.addStartedTaskEvent(task);
 	}
 
-	public EC2Instance getEc2Instance() {
-		return ec2Instance;
+	public List<EC2Instance> getEc2InstanceTypes() {
+		return ec2InstanceTypes;
 	}
 
 	// B-- beginning of implementation of SpotPriceEventListener
@@ -141,17 +142,9 @@ public class SpotInstancesMultiCoreSchedulerLimited extends SpotInstancesSchedul
 	public void fullHourCompleted(Event<SpotValue> spotValueEvent) {
 		BidValue bidValue = (BidValue) spotValueEvent.getSource();
 		Task task = bidValue.getTask();
-		if (!task.isFinished()) {
-			assert this.accountedCost.containsKey(task);
-			double totalCost = this.accountedCost.get(task) + currentSpotPrice.getPrice();
-			this.accountedCost.put(task, totalCost);
-			task.setCost(totalCost);
-			this.addFullHourCompletedEvent(bidValue);
-		} else if (task.getTaskExecution().getMachine().isAnyProcessorBusy()) {
-			assert this.accountedCost.containsKey(task);
-			double totalCost = this.accountedCost.get(task) + currentSpotPrice.getPrice();
-			this.accountedCost.put(task, totalCost);
-			task.setCost(totalCost);
+		// if task is still running or there is at least one processor busy in the machine...
+		if (!task.isFinished() || task.getTaskExecution().getMachine().isAnyProcessorBusy()) {
+			this.costManager.updateAccounting(task, currentSpotPrice);
 			this.addFullHourCompletedEvent(bidValue);
 		} else {
 			// System.out.println("Task: " + task.getId() + ": já terminou antes
@@ -181,37 +174,28 @@ public class SpotInstancesMultiCoreSchedulerLimited extends SpotInstancesSchedul
 	@Override
 	public void taskSubmitted(Event<Task> taskEvent) {
 		Task task = taskEvent.getSource();
-
 		if (task.getBidValue() >= currentSpotPrice.getPrice()) {
 
 			String cloudUserId = getCloudUserId(task);
-			if (!numberOfAllocatedMachinesForUser.containsKey(cloudUserId)) {
-				this.numberOfAllocatedMachinesForUser.put(cloudUserId, 0);
-				this.allocatedMachinesForUser.put(cloudUserId, new ArrayList<Machine>());
-			}
+			this.allocationManager.registerUser(cloudUserId);
 
-			List<Processor> availableProcessors;
+			List<Processor> freeProcessors;
+			EC2Instance ec2Instance;
 			//gets from one of the already allocated machines
-			if ((availableProcessors = getAnyAvailableProcessors(this.allocatedMachinesForUser.get(cloudUserId), task)) != null) {
+			if ((freeProcessors = getAnyEligibleFreeProcessors(cloudUserId, task)) != null) {
 
-				this.processor2Task.put(availableProcessors.get(0), task);
-				startTask(task, availableProcessors);
+				startTask(task, freeProcessors);
 
-			} else if (this.numberOfAllocatedMachinesForUser.get(cloudUserId) < limit && task.getNumberOfCores() <= ec2Instance.numCores) { //allocates a new machine
+			} else if ((ec2Instance = selectNewSuitableInstanceType(cloudUserId, task)) != null) { //allocates a new machine
 
-					String machineName = getCloudUserId(task) + "-m_" + nextMachineId++;
-					Machine newMachine = new Machine(machineName, ec2Instance.speedPerCore, ec2Instance.numCores);
-					BidValue bidValue = new BidValue(machineName, getCurrentTime(), task.getBidValue(), task);
-					this.addFullHourCompletedEvent(bidValue);
-	
-					List<Processor> allocatedProcessors = newMachine.getFreeProcessors(task.getNumberOfCores());
-					this.processor2Task.put(allocatedProcessors.get(0), task);
-					this.allocatedMachines.put(bidValue, allocatedProcessors.get(0).getMachine());
-	
-					this.numberOfAllocatedMachinesForUser.put(cloudUserId, this.numberOfAllocatedMachinesForUser.get(cloudUserId) + 1);
-					this.allocatedMachinesForUser.get(cloudUserId).add(newMachine);
-	
-					startTask(task, allocatedProcessors);
+				Machine newMachine = this.allocationManager.allocateNewMachine(cloudUserId, ec2Instance);
+				BidValue bidValue = new BidValue(newMachine.getName(), getCurrentTime(), task.getBidValue(), task);
+				this.addFullHourCompletedEvent(bidValue);
+
+				List<Processor> allocatedProcessors = newMachine.getFreeProcessors(task.getNumberOfCores());
+				this.costManager.account(bidValue, allocatedProcessors.get(0).getMachine());
+
+				startTask(task, allocatedProcessors);
 
 			} else { //enqueue the task to be executed later
 				if (!queuedTasks.containsKey(cloudUserId)) {
@@ -220,66 +204,59 @@ public class SpotInstancesMultiCoreSchedulerLimited extends SpotInstancesSchedul
 				this.queuedTasks.get(cloudUserId).add(task);
 			}
 			
-			assert this.numberOfAllocatedMachinesForUser.get(cloudUserId) <= limit;
-
 		} else {
 			System.out.println("task.getBidValue() < currentSpotPrice.getPrice(): " + task.getBidValue() + " < " + currentSpotPrice.getPrice());
 		}
 
 	}
 
+	private EC2Instance selectNewSuitableInstanceType(String cloudUserId, Task task) {
+		for (EC2Instance ec2Instance : ec2InstanceTypes) {
+			if (this.allocationManager.canAllocateNewInstance(cloudUserId, ec2Instance)) {
+				if (task.getNumberOfCores() <= ec2Instance.numCores) {
+					return ec2Instance;
+				}
+			}
+		}
+		return null;
+	}
+
 	@Override
 	public void taskFinished(Event<Task> taskEvent) {
 		Task sourceTask = taskEvent.getSource();
-		String userId = getCloudUserId(sourceTask);
+		String cloudUserId = getCloudUserId(sourceTask);
 
-		// System.out.println(getCurrentTime() + ":\n" +
-		// this.allocatedMachines);
-
-		List<Task> queuedTaskFromUser = queuedTasks.get(userId);
-		// se não tem fila
+		List<Task> queuedTaskFromUser = queuedTasks.get(cloudUserId);
+		// deallocate processor
+		Processor processor = this.taskManager.deassignProcessor(sourceTask);
+		Machine machine = processor.getMachine();
+		
+		// queue is empty
 		if (queuedTaskFromUser == null || queuedTaskFromUser.isEmpty()) {
 
-			// deallocate processor
-			Processor processor = this.processor2Task.getKey(sourceTask);
-			this.processor2Task.remove(processor);
-
-			if (processor.getMachine().isAllProcessorsFree()) {
+			if (machine.isAllProcessorsFree()) {
 				// deallocate machine
-				BidValue currentBidValue = this.allocatedMachines.getKey(processor.getMachine());
-				assert currentBidValue != null;
-				this.allocatedMachines.remove(currentBidValue);
+				this.costManager.finishAccounting(machine, currentSpotPrice);
 
-				Task firstAllocatedTask = currentBidValue.getTask();
-				double totalCost = this.accountedCost.get(firstAllocatedTask) + currentSpotPrice.getPrice();
-				this.accountedCost.put(firstAllocatedTask, totalCost);
-				firstAllocatedTask.setCost(totalCost);
-
-				this.numberOfAllocatedMachinesForUser.put(userId, this.numberOfAllocatedMachinesForUser.get(userId) - 1);
-				boolean removed = this.allocatedMachinesForUser.get(userId).remove(processor.getMachine());
-				assert removed : userId + " " + processor.getMachine();
+				boolean removed = this.allocationManager.deallocateMachine(cloudUserId, machine);
+				assert removed : cloudUserId + " " + machine;
 			}
 
-		} else { // tem fila
-
-			Processor processor = this.processor2Task.getKey(sourceTask);
-			this.processor2Task.remove(processor);
-
-			BidValue currentBidValue = this.allocatedMachines.getKey(processor.getMachine());
+		} else { // there are enqueued tasks
+			
+			BidValue currentBidValue = this.costManager.getBidValue(machine);
 			assert currentBidValue != null;
 			// this.allocatedMachines.remove(currentBidValue);
 
-			if (queuedTaskFromUser.get(0).isAnEligibleMachine(processor.getMachine())) {
-				Task queuedTask = queuedTaskFromUser.remove(0);
-				this.processor2Task.put(processor, queuedTask);
+			if (queuedTaskFromUser.get(0).isAnEligibleMachine(machine)) {
+				Task dequeuedTask = queuedTaskFromUser.remove(0);
 	
-				BidValue bidValue = new BidValue(processor.getMachine().getName(), getCurrentTime(), queuedTask.getBidValue(), queuedTask);
-				// this.allocatedMachines.put(bidValue, processor);
+				BidValue bidValue = new BidValue(machine.getName(), getCurrentTime(), dequeuedTask.getBidValue(), dequeuedTask);
 	
-				List<Processor> processors = getAnyAvailableProcessors(Lists.newArrayList(processor.getMachine()), queuedTask);;
-				startTask(queuedTask, processors);
+				List<Processor> processors = machine.getFreeProcessors(dequeuedTask.getNumberOfCores());
+				startTask(dequeuedTask, processors);
 	
-				this.addComplementaryHourCompletedEvent(bidValue, currentBidValue);			
+				this.addComplementaryHourCompletedEvent(bidValue, currentBidValue);
 			}
 
 		}

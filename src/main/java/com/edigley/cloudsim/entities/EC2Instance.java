@@ -8,7 +8,7 @@ import org.apache.commons.lang.builder.ToStringStyle;
 
 import com.edigley.oursim.entities.Processor;
 
-public class EC2Instance {
+public class EC2Instance implements Comparable<EC2Instance> {
 
 	public String type;
 
@@ -56,4 +56,22 @@ public class EC2Instance {
 				"storage", storage).append("arch", arch).append("badges", badges).toString();
 	}
 
+	public int compareTo(EC2Instance o) {
+		int diffCores = (this.numCores - o.numCores);
+		if (diffCores == 0) {
+			long diffSpeedPerCore = (this.speedPerCore - o.speedPerCore); 
+			if (diffSpeedPerCore == 0) {
+				return this.name.compareTo(o.name);
+			} else if (diffSpeedPerCore < 0) {
+				return -4;
+			} else {
+				return 4;
+			}
+		} else if (diffCores < 0) {
+			return -5;
+		} else {
+			return 5;
+		}
+	}
+	
 }
