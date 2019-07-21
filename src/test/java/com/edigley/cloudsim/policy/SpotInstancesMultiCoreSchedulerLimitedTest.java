@@ -163,8 +163,8 @@ public class SpotInstancesMultiCoreSchedulerLimitedTest extends AbstractOurSimAP
 				for (int i = 0; i < numOfJobs; i++) {
 					Job job = addJob(nextJobId++, 0, jobRuntime, peer, this.inputs, jobs);
 					job.setUserId("default_user");
-					for (Task Task : job.getTasks()) {
-						Task.setBidValue(SPOT_PRICE);
+					for (Task task : job.getTasks()) {
+						task.setBidValue(SPOT_PRICE);
 					}
 				}
 			}
